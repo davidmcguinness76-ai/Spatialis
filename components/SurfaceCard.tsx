@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import type { Surface, SurfaceLayer, Material } from '@/lib/types'
@@ -18,73 +18,135 @@ type Props = {
   onChange: (layer: SurfaceLayer) => void
 }
 
-export default function SurfaceCard({ surface, layer, roomDimensions, onChange }: Props) {
-  const [matType, setMatType] = useState<'tile' | 'paint'>(
-    (layer.materials[0]?.material.type as 'tile' | 'paint') ?? 'tile'
-  )
+const DEFAULT_TILE: TileMaterial = { type: 'tile', photoUrl: '', dimensions: { w: 0, h: 0 }, label: '' }
+const DEFAULT_PAINT: PaintMaterial = { type: 'paint', colour: '#ffffff', finish: 'matt', label: '' }
 
-  const defaultMaterial: Material =
-    matType === 'tile'
-      ? { type: 'tile', photoUrl: '', dimensions: { w: 0, h: 0 }, label: '' }
-      : { type: 'paint', colour: '#ffffff', finish: 'matt', label: '' }
+function MaterialEditor({
+  material,
+  showGrout,
+  onChange,
+  onPhotoUpload,
+}: {
+  material: Material
+  showGrout: boolean
+  onChange: (m: Material) => void
+  onPhotoUpload: (url: string) => void
+}) {
+  const [matType, setMatType] = useState<'tile' | 'paint'>(material.type)
 
-  const entry = layer.materials[0] ?? { material: defaultMaterial }
-
-  function updateTileMaterial(patch: Partial<TileMaterial>) {
-    const base: TileMaterial =
-      entry.material.type === 'tile'
-        ? entry.material
-        : { type: 'tile', photoUrl: '', dimensions: { w: 0, h: 0 }, label: '' }
-    const updated: SurfaceLayer = {
-      ...layer,
-      materials: [{ ...entry, material: { ...base, ...patch } }],
-    }
-    onChange(updated)
+  function switchType(t: 'tile' | 'paint') {
+    setMatType(t)
+    onChange(t === 'tile' ? DEFAULT_TILE : DEFAULT_PAINT)
   }
 
-  function updatePaintMaterial(patch: Partial<PaintMaterial>) {
-    const base: PaintMaterial =
-      entry.material.type === 'paint'
-        ? entry.material
-        : { type: 'paint', colour: '#ffffff', finish: 'matt', label: '' }
-    const updated: SurfaceLayer = {
-      ...layer,
-      materials: [{ ...entry, material: { ...base, ...patch } }],
-    }
-    onChange(updated)
-  }
+  const tile = material.type === 'tile' ? material : null
+  const paint = material.type === 'paint' ? material : null
 
-  function updateSplit(field: 'aboveMm' | 'belowMm', val: string) {
-    const updated: SurfaceLayer = {
-      ...layer,
-      materials: [{ ...entry, [field]: val ? Number(val) : undefined }],
-    }
-    onChange(updated)
-  }
-
-  async function handleTilePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     const fd = new FormData()
     fd.append('file', file)
     const res = await fetch('/api/upload', { method: 'POST', body: fd })
-    if (!res.ok) {
-      console.error('Upload failed:', res.status)
-      return
-    }
+    if (!res.ok) { console.error('Upload failed:', res.status); return }
     const { url } = (await res.json()) as { url: string }
-    updateTileMaterial({ photoUrl: url })
+    onPhotoUpload(url)
   }
 
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <Button size="sm" variant={matType === 'tile' ? 'default' : 'outline'} onClick={() => switchType('tile')}>Tile</Button>
+        <Button size="sm" variant={matType === 'paint' ? 'default' : 'outline'} onClick={() => switchType('paint')}>Paint</Button>
+      </div>
+
+      {matType === 'tile' ? (
+        <div className="space-y-2">
+          <div>
+            <Label>Tile reference photo</Label>
+            <Input type="file" accept="image/*" onChange={handlePhoto} className="mt-1" />
+          </div>
+          <div className="flex gap-2">
+            <div>
+              <Label>Width (mm)</Label>
+              <Input
+                type="number" placeholder="300" className="w-24"
+                value={tile?.dimensions?.w || ''}
+                onChange={(e) => onChange({ ...(tile ?? DEFAULT_TILE), dimensions: { w: Number(e.target.value), h: tile?.dimensions?.h ?? 0 } })}
+              />
+            </div>
+            <div>
+              <Label>Height (mm)</Label>
+              <Input
+                type="number" placeholder="600" className="w-24"
+                value={tile?.dimensions?.h || ''}
+                onChange={(e) => onChange({ ...(tile ?? DEFAULT_TILE), dimensions: { w: tile?.dimensions?.w ?? 0, h: Number(e.target.value) } })}
+              />
+            </div>
+          </div>
+          {showGrout && (
+            <div className="flex gap-2 items-end">
+              <div>
+                <Label>Grout width (mm)</Label>
+                <Input
+                  type="number" placeholder="3" className="w-24"
+                  value={tile?.groutWidth ?? ''}
+                  onChange={(e) => onChange({ ...(tile ?? DEFAULT_TILE), groutWidth: e.target.value ? Number(e.target.value) : undefined })}
+                />
+              </div>
+              <div>
+                <Label>Grout colour</Label>
+                <Input
+                  type="color" className="w-16 h-10 p-1"
+                  value={tile?.groutColour ?? '#cccccc'}
+                  onChange={(e) => onChange({ ...(tile ?? DEFAULT_TILE), groutColour: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div>
+            <Label>Colour</Label>
+            <Input
+              type="color" className="w-16 h-10 p-1"
+              value={paint?.colour ?? '#ffffff'}
+              onChange={(e) => onChange({ ...(paint ?? DEFAULT_PAINT), colour: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label>Finish</Label>
+            <select
+              value={paint?.finish ?? 'matt'}
+              onChange={(e) => onChange({ ...(paint ?? DEFAULT_PAINT), finish: e.target.value as 'matt' | 'silk' | 'gloss' })}
+              className="border rounded px-2 py-1 text-sm mt-1 block"
+            >
+              <option value="matt">Matt</option>
+              <option value="silk">Silk</option>
+              <option value="gloss">Gloss</option>
+            </select>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function SurfaceCard({ surface, layer, roomDimensions, onChange }: Props) {
   const isFixture = ['bath', 'shower', 'sink', 'toilet'].includes(surface.type)
   const isWall = surface.type === 'wall'
-  const isTile = matType === 'tile'
+  const showGrout = surface.type === 'wall' || surface.type === 'floor'
+  const surfaceW = roomDimensions.length
   const surfaceH = surface.type === 'floor' ? roomDimensions.width : roomDimensions.height
-  const surfaceW = surface.type === 'floor' ? roomDimensions.length : roomDimensions.length
-  const splitH = entry.belowMm ?? surfaceH
+  const hasSplit = isWall && (layer.splitHeightMm ?? 0) > 0
 
-  const tileMat = entry.material.type === 'tile' ? entry.material : null
-  const paintMat = entry.material.type === 'paint' ? entry.material : null
+  function setLower(m: Material) { onChange({ ...layer, lower: m }) }
+  function setUpper(m: Material) { onChange({ ...layer, upper: m }) }
+  function setSplitHeight(val: string) {
+    const mm = val ? Number(val) : undefined
+    onChange({ ...layer, splitHeightMm: mm, upper: mm ? (layer.upper ?? DEFAULT_TILE) : undefined })
+  }
 
   return (
     <Card>
@@ -96,132 +158,61 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
       </CardHeader>
       <CardContent className="space-y-3">
         {isFixture ? (
-          <p className="text-sm text-muted-foreground">Fixture — use Fixture notes below to describe changes (e.g. replace with shower).</p>
+          <p className="text-sm text-muted-foreground">Fixture — describe changes in Fixture notes below (e.g. replace with shower).</p>
         ) : (
-        <div className="flex gap-2">
-          <Button size="sm" variant={isTile ? 'default' : 'outline'} onClick={() => setMatType('tile')}>Tile</Button>
-          <Button size="sm" variant={!isTile ? 'default' : 'outline'} onClick={() => setMatType('paint')}>Paint</Button>
-        </div>
-        )}
+          <>
+            {isWall && (
+              <div className="space-y-1">
+                <Label>Split height (mm) <span className="text-xs font-normal text-muted-foreground">leave 0 for full wall</span></Label>
+                <Input
+                  type="number" placeholder="e.g. 1200" className="w-28"
+                  value={layer.splitHeightMm ?? 0}
+                  onChange={(e) => setSplitHeight(e.target.value)}
+                />
+              </div>
+            )}
 
-        {!isFixture && isTile ? (
-          <div className="space-y-2">
-            <div>
-              <Label>Tile reference photo</Label>
-              <Input type="file" accept="image/*" onChange={handleTilePhoto} className="mt-1" />
-            </div>
-            <div className="flex gap-2">
-              <div>
-                <Label>Width (mm)</Label>
-                <Input
-                  type="number"
-                  placeholder="300"
-                  value={tileMat?.dimensions?.w || ''}
-                  onChange={(e) =>
-                    updateTileMaterial({
-                      dimensions: { w: Number(e.target.value), h: tileMat?.dimensions?.h ?? 0 },
-                    })
-                  }
-                  className="w-24"
+            {hasSplit ? (
+              <>
+                <div className="border rounded p-3 space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Lower zone (0 to {layer.splitHeightMm}mm)</p>
+                  <MaterialEditor
+                    material={layer.lower}
+                    showGrout={showGrout}
+                    onChange={setLower}
+                    onPhotoUpload={(url) => setLower({ ...(layer.lower.type === 'tile' ? layer.lower : DEFAULT_TILE), photoUrl: url })}
+                  />
+                  {layer.lower.type === 'tile' && (
+                    <TileCalculator surfaceWidthMm={surfaceW} surfaceHeightMm={layer.splitHeightMm!} tileDims={layer.lower.dimensions} label={surface.label + ' lower'} />
+                  )}
+                </div>
+                <div className="border rounded p-3 space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Upper zone ({layer.splitHeightMm}mm to {surfaceH}mm)</p>
+                  <MaterialEditor
+                    material={layer.upper ?? DEFAULT_TILE}
+                    showGrout={showGrout}
+                    onChange={setUpper}
+                    onPhotoUpload={(url) => setUpper({ ...((layer.upper?.type === 'tile' ? layer.upper : DEFAULT_TILE) as TileMaterial), photoUrl: url })}
+                  />
+                  {(layer.upper ?? DEFAULT_TILE).type === 'tile' && (
+                    <TileCalculator surfaceWidthMm={surfaceW} surfaceHeightMm={surfaceH - layer.splitHeightMm!} tileDims={(layer.upper?.type === 'tile' ? layer.upper : DEFAULT_TILE).dimensions} label={surface.label + ' upper'} />
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <MaterialEditor
+                  material={layer.lower}
+                  showGrout={showGrout}
+                  onChange={setLower}
+                  onPhotoUpload={(url) => setLower({ ...(layer.lower.type === 'tile' ? layer.lower : DEFAULT_TILE), photoUrl: url })}
                 />
-              </div>
-              <div>
-                <Label>Height (mm)</Label>
-                <Input
-                  type="number"
-                  placeholder="600"
-                  value={tileMat?.dimensions?.h || ''}
-                  onChange={(e) =>
-                    updateTileMaterial({
-                      dimensions: { w: tileMat?.dimensions?.w ?? 0, h: Number(e.target.value) },
-                    })
-                  }
-                  className="w-24"
-                />
-              </div>
-            </div>
-            {(isWall || surface.type === 'floor') && <div className="flex gap-2 items-end">
-              <div>
-                <Label>Grout width (mm)</Label>
-                <Input
-                  type="number"
-                  placeholder="3"
-                  value={tileMat?.groutWidth ?? ''}
-                  onChange={(e) => updateTileMaterial({ groutWidth: e.target.value ? Number(e.target.value) : undefined })}
-                  className="w-24"
-                />
-              </div>
-              <div>
-                <Label>Grout colour</Label>
-                <Input
-                  type="color"
-                  value={tileMat?.groutColour ?? '#cccccc'}
-                  onChange={(e) => updateTileMaterial({ groutColour: e.target.value })}
-                  className="w-16 h-10 p-1"
-                />
-              </div>
-            </div>}
-            <TileCalculator
-              surfaceWidthMm={surfaceW}
-              surfaceHeightMm={splitH}
-              tileDims={tileMat?.dimensions ?? { w: 0, h: 0 }}
-              label={surface.label}
-            />
-          </div>
-        ) : !isFixture ? (
-          <div className="space-y-2">
-            <div>
-              <Label>Colour</Label>
-              <Input
-                type="color"
-                value={paintMat?.colour ?? '#ffffff'}
-                onChange={(e) => updatePaintMaterial({ colour: e.target.value })}
-                className="w-16 h-10 p-1"
-              />
-            </div>
-            <div>
-              <Label>Finish</Label>
-              <select
-                value={paintMat?.finish ?? 'matt'}
-                onChange={(e) =>
-                  updatePaintMaterial({ finish: e.target.value as 'matt' | 'silk' | 'gloss' })
-                }
-                className="border rounded px-2 py-1 text-sm mt-1 block"
-              >
-                <option value="matt">Matt</option>
-                <option value="silk">Silk</option>
-                <option value="gloss">Gloss</option>
-              </select>
-            </div>
-          </div>
-        ) : null}
-
-        {isWall && (
-          <div className="space-y-1">
-            <Label>Split height (mm) <span className="text-xs font-normal text-muted-foreground">— optional, leave 0 for full wall</span></Label>
-            <div className="flex gap-2">
-              <div>
-                <Label className="text-xs text-muted-foreground">Lower zone up to (mm)</Label>
-                <Input
-                  type="number"
-                  placeholder="e.g. 1200"
-                  value={entry.belowMm ?? 0}
-                  onChange={(e) => updateSplit('belowMm', e.target.value)}
-                  className="w-28"
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Upper zone from (mm)</Label>
-                <Input
-                  type="number"
-                  placeholder="e.g. 1200"
-                  value={entry.aboveMm ?? 0}
-                  onChange={(e) => updateSplit('aboveMm', e.target.value)}
-                  className="w-28"
-                />
-              </div>
-            </div>
-          </div>
+                {layer.lower.type === 'tile' && (
+                  <TileCalculator surfaceWidthMm={surfaceW} surfaceHeightMm={surfaceH} tileDims={layer.lower.dimensions} label={surface.label} />
+                )}
+              </>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

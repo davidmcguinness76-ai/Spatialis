@@ -41,7 +41,9 @@ export type Material =
 
 export type SurfaceLayer = {
   surfaceId: Surface['id']
-  materials: { material: Material; aboveMm?: number; belowMm?: number }[]
+  splitHeightMm?: number        // mm from floor; if set, lower/upper have separate materials
+  lower: Material               // full wall if no split, lower zone if split
+  upper?: Material              // only used when splitHeightMm is set
 }
 
 export type Design = {

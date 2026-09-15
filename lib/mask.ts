@@ -1,4 +1,4 @@
-import type { Surface, SurfaceLayer, Room } from './types'
+﻿import type { Surface, SurfaceLayer, Room } from './types'
 
 export function buildPrompt(
   visibleSurfaces: Surface[],
@@ -14,21 +14,19 @@ export function buildPrompt(
     const layer = layers.find((l) => l.surfaceId === surface.id)
     if (!layer) continue
 
-    for (const { material, aboveMm, belowMm } of layer.materials) {
-      const location = surface.label
-      const zone =
-        belowMm != null ? ` below ${belowMm}mm` :
-        aboveMm != null ? ` above ${aboveMm}mm` : ''
-
+    function describeMaterial(material: SurfaceLayer['lower'], zone: string) {
       if (material.type === 'tile') {
-        parts.push(
-          `${location}${zone}: ${material.label} tiles, each ${material.dimensions.w}mm × ${material.dimensions.h}mm.`
-        )
+        parts.push(`${surface.label}${zone}: ${material.label} tiles, each ${material.dimensions.w}mm x ${material.dimensions.h}mm.`)
       } else {
-        parts.push(
-          `${location}${zone}: ${material.finish} paint, colour ${material.colour}.`
-        )
+        parts.push(`${surface.label}${zone}: ${material.finish} paint, colour ${material.colour}.`)
       }
+    }
+
+    if (layer.splitHeightMm && layer.upper) {
+      describeMaterial(layer.lower, ` below ${layer.splitHeightMm}mm`)
+      describeMaterial(layer.upper, ` above ${layer.splitHeightMm}mm`)
+    } else {
+      describeMaterial(layer.lower, '')
     }
   }
 

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { getProject, getDesign, saveDesign } from '@/lib/storage'
@@ -11,9 +11,7 @@ import { Separator } from '@/components/ui/separator'
 function defaultLayer(surfaceId: string): SurfaceLayer {
   return {
     surfaceId,
-    materials: [{
-      material: { type: 'tile', photoUrl: '', dimensions: { w: 0, h: 0 }, label: '' },
-    }],
+    lower: { type: 'tile', photoUrl: '', dimensions: { w: 0, h: 0 }, label: '' },
   }
 }
 
