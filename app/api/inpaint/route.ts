@@ -17,47 +17,52 @@ type InpaintRequest = {
 }
 
 export async function POST(req: NextRequest) {
-  const body = (await req.json()) as InpaintRequest
-
   try {
-    if (await isOverLimit()) {
-      return NextResponse.json({ error: 'Monthly spend limit reached' }, { status: 402 })
+    const body = (await req.json()) as InpaintRequest
+
+    try {
+      if (await isOverLimit()) {
+        return NextResponse.json({ error: 'Monthly spend limit reached' }, { status: 402 })
+      }
+    } catch (e) {
+      console.error('[inpaint] spend check failed:', e)
     }
-  } catch (e) {
-    console.error('[inpaint] spend check failed:', e)
-  }
 
-  const prompt = buildPrompt(body.visibleSurfaces, body.layers, body.roomDimensions, body.fixtureNotes)
+    const prompt = buildPrompt(body.visibleSurfaces, body.layers, body.roomDimensions, body.fixtureNotes)
 
-  if (MOCK) {
-    console.log('[inpaint mock] prompt:', prompt)
-    await addSpend(COST_PER_IMAGE)
-    return NextResponse.json({ resultUrl: body.photoUrl, costUsd: COST_PER_IMAGE })
-  }
-
-  const Replicate = (await import('replicate')).default
-  const replicate = new Replicate({ auth: process.env.REPLICATE_API_KEY })
-
-  // ponytail: full-white mask = repaint everything; per-surface mask generation is the upgrade path
-  const maskUrl = body.maskUrl ?? 'https://placehold.co/1x1/ffffff/ffffff.png'
-
-  const output = await replicate.run(
-    'black-forest-labs/flux-dev-inpainting' as `${string}/${string}`,
-    {
-      input: {
-        image: body.photoUrl,
-        mask: maskUrl,
-        prompt,
-        num_inference_steps: 28,
-        guidance_scale: 3.5,
-      },
+    if (MOCK) {
+      console.log('[inpaint mock] prompt:', prompt)
+      try { await addSpend(COST_PER_IMAGE) } catch { /* blob unavailable in dev */ }
+      return NextResponse.json({ resultUrl: body.photoUrl, costUsd: COST_PER_IMAGE })
     }
-  )
 
-  // replicate.run() returns Promise<object>; flux-dev-inpainting yields FileOutput[].
-  // String() coerces FileOutput (which has a url() method) to its URL string.
-  const resultUrl = String(Array.isArray(output) ? (output as unknown[])[0] : output)
+    const Replicate = (await import('replicate')).default
+    const replicate = new Replicate({ auth: process.env.REPLICATE_API_KEY })
 
-  await addSpend(COST_PER_IMAGE)
-  return NextResponse.json({ resultUrl, costUsd: COST_PER_IMAGE })
+    // ponytail: full-white mask = repaint everything; per-surface mask generation is the upgrade path
+    const maskUrl = body.maskUrl ?? 'https://placehold.co/1x1/ffffff/ffffff.png'
+
+    const output = await replicate.run(
+      'black-forest-labs/flux-dev-inpainting' as `${string}/${string}`,
+      {
+        input: {
+          image: body.photoUrl,
+          mask: maskUrl,
+          prompt,
+          num_inference_steps: 28,
+          guidance_scale: 3.5,
+        },
+      }
+    )
+
+    // replicate.run() returns Promise<object>; flux-dev-inpainting yields FileOutput[].
+    // String() coerces FileOutput (which has a url() method) to its URL string.
+    const resultUrl = String(Array.isArray(output) ? (output as unknown[])[0] : output)
+
+    try { await addSpend(COST_PER_IMAGE) } catch { /* non-fatal */ }
+    return NextResponse.json({ resultUrl, costUsd: COST_PER_IMAGE })
+  } catch (err) {
+    console.error('[inpaint] unhandled error:', err)
+    return NextResponse.json({ error: String(err) }, { status: 500 })
+  }
 }
