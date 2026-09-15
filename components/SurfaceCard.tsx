@@ -170,26 +170,29 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
         )}
 
         {surface.type === 'wall' && (
-          <div className="flex gap-2">
-            <div>
-              <Label>Tiles below (mm)</Label>
-              <Input
-                type="number"
-                placeholder="e.g. 1200"
-                value={entry.belowMm ?? 0}
-                onChange={(e) => updateSplit('belowMm', e.target.value)}
-                className="w-28"
-              />
-            </div>
-            <div>
-              <Label>Paint above (mm)</Label>
-              <Input
-                type="number"
-                placeholder="e.g. 1200"
-                value={entry.aboveMm ?? 0}
-                onChange={(e) => updateSplit('aboveMm', e.target.value)}
-                className="w-28"
-              />
+          <div className="space-y-1">
+            <Label>Split height (mm) <span className="text-xs font-normal text-muted-foreground">— optional, leave 0 for full wall</span></Label>
+            <div className="flex gap-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Lower zone up to (mm)</Label>
+                <Input
+                  type="number"
+                  placeholder="e.g. 1200"
+                  value={entry.belowMm ?? 0}
+                  onChange={(e) => updateSplit('belowMm', e.target.value)}
+                  className="w-28"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Upper zone from (mm)</Label>
+                <Input
+                  type="number"
+                  placeholder="e.g. 1200"
+                  value={entry.aboveMm ?? 0}
+                  onChange={(e) => updateSplit('aboveMm', e.target.value)}
+                  className="w-28"
+                />
+              </div>
             </div>
           </div>
         )}
