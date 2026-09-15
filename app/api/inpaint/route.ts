@@ -43,14 +43,15 @@ export async function POST(req: NextRequest) {
     const maskUrl = body.maskUrl ?? 'https://placehold.co/1x1/ffffff/ffffff.png'
 
     const output = await replicate.run(
-      'black-forest-labs/flux-dev-inpainting' as `${string}/${string}`,
+      'black-forest-labs/flux-fill-pro' as `${string}/${string}`,
       {
         input: {
           image: body.photoUrl,
           mask: maskUrl,
           prompt,
           num_inference_steps: 28,
-          guidance_scale: 3.5,
+          guidance: 3.5,
+          output_format: 'jpg',
         },
       }
     )
