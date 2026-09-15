@@ -17,11 +17,6 @@ type InpaintRequest = {
 }
 
 export async function POST(req: NextRequest) {
-  const secret = process.env.INPAINT_SECRET
-  if (secret && req.headers.get('x-inpaint-secret') !== secret) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
   const body = (await req.json()) as InpaintRequest
 
   if (await isOverLimit()) {
