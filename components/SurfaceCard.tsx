@@ -68,6 +68,10 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
     const fd = new FormData()
     fd.append('file', file)
     const res = await fetch('/api/upload', { method: 'POST', body: fd })
+    if (!res.ok) {
+      console.error('Upload failed:', res.status)
+      return
+    }
     const { url } = (await res.json()) as { url: string }
     updateTileMaterial({ photoUrl: url })
   }

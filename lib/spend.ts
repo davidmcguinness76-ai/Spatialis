@@ -27,7 +27,11 @@ export async function getSpend(): Promise<SpendRecord> {
 export async function addSpend(usd: number): Promise<void> {
   const current = await getSpend()
   const updated: SpendRecord = { month: currentMonth(), totalUsd: current.totalUsd + usd }
-  await put(BLOB_PATHNAME, JSON.stringify(updated), { access: 'public', addRandomSuffix: false })
+  try {
+    await put(BLOB_PATHNAME, JSON.stringify(updated), { access: 'public', addRandomSuffix: false })
+  } catch {
+    // Spend tracking failure should not block the render — token may be unset in dev
+  }
 }
 
 export async function isOverLimit(): Promise<boolean> {

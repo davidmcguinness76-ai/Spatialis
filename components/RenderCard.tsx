@@ -30,7 +30,12 @@ export default function RenderCard({ photo, surfaces, layers, roomDimensions, fi
     try {
       const res = await fetch('/api/inpaint', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(process.env.NEXT_PUBLIC_INPAINT_SECRET
+            ? { 'x-inpaint-secret': process.env.NEXT_PUBLIC_INPAINT_SECRET }
+            : {}),
+        },
         body: JSON.stringify({
           photoUrl: photo.imageUrl,
           visibleSurfaces,

@@ -46,6 +46,10 @@ export default function HomePage() {
     const fd = new FormData()
     fd.append('file', file)
     const res = await fetch('/api/upload', { method: 'POST', body: fd })
+    if (!res.ok) {
+      console.error('Upload failed:', res.status)
+      return
+    }
     const { url } = await res.json()
     update({ floorPlan: { ...room.floorPlan, imageUrl: url } })
   }
@@ -54,6 +58,10 @@ export default function HomePage() {
     const fd = new FormData()
     fd.append('file', file)
     const res = await fetch('/api/upload', { method: 'POST', body: fd })
+    if (!res.ok) {
+      console.error('Upload failed:', res.status)
+      return
+    }
     const { url } = await res.json()
     const photo: Photo = {
       id: crypto.randomUUID(),

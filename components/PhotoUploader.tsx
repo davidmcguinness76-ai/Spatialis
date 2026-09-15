@@ -1,7 +1,7 @@
 // components/PhotoUploader.tsx
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import type { Surface } from '@/lib/types'
 
@@ -12,20 +12,20 @@ type Props = {
 
 export default function PhotoUploader({ surfaces, onUpload }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
-  const selectedRef = useRef<string[]>([])
+  const [selected, setSelected] = useState<string[]>([])
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    onUpload(file, selectedRef.current)
-    selectedRef.current = []
+    onUpload(file, selected)
+    setSelected([])
     e.target.value = ''
   }
 
   function toggleSurface(id: string) {
-    selectedRef.current = selectedRef.current.includes(id)
-      ? selectedRef.current.filter((s) => s !== id)
-      : [...selectedRef.current, id]
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    )
   }
 
   return (
@@ -34,7 +34,11 @@ export default function PhotoUploader({ surfaces, onUpload }: Props) {
       <div className="flex flex-wrap gap-2">
         {surfaces.map((s) => (
           <label key={s.id} className="flex items-center gap-1 text-sm cursor-pointer">
-            <input type="checkbox" onChange={() => toggleSurface(s.id)} />
+            <input
+              type="checkbox"
+              checked={selected.includes(s.id)}
+              onChange={() => toggleSurface(s.id)}
+            />
             {s.label}
           </label>
         ))}

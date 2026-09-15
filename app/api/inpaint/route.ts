@@ -9,6 +9,7 @@ const COST_PER_IMAGE = 0.005
 
 type InpaintRequest = {
   photoUrl: string
+  maskUrl?: string
   visibleSurfaces: Surface[]
   layers: SurfaceLayer[]
   roomDimensions: { length: number; width: number; height: number }
@@ -16,6 +17,11 @@ type InpaintRequest = {
 }
 
 export async function POST(req: NextRequest) {
+  const secret = process.env.INPAINT_SECRET
+  if (secret && req.headers.get('x-inpaint-secret') !== secret) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const body = (await req.json()) as InpaintRequest
 
   if (await isOverLimit()) {
@@ -33,11 +39,15 @@ export async function POST(req: NextRequest) {
   const Replicate = (await import('replicate')).default
   const replicate = new Replicate({ auth: process.env.REPLICATE_API_KEY })
 
+  // ponytail: full-white mask = repaint everything; per-surface mask generation is the upgrade path
+  const maskUrl = body.maskUrl ?? 'https://placehold.co/1x1/ffffff/ffffff.png'
+
   const output = await replicate.run(
-    'black-forest-labs/flux-dev-inpainting',
+    'black-forest-labs/flux-dev-inpainting' as `${string}/${string}`,
     {
       input: {
         image: body.photoUrl,
+        mask: maskUrl,
         prompt,
         num_inference_steps: 28,
         guidance_scale: 3.5,
