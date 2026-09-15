@@ -56,9 +56,11 @@ export async function POST(req: NextRequest) {
       }
     )
 
-    // replicate.run() returns Promise<object>; flux-dev-inpainting yields FileOutput[].
-    // String() coerces FileOutput (which has a url() method) to its URL string.
-    const resultUrl = String(Array.isArray(output) ? (output as unknown[])[0] : output)
+    // flux-fill yields FileOutput[] — extract the URL string from the first item
+    const first = Array.isArray(output) ? (output as unknown[])[0] : output
+    // FileOutput has a .url() method; fall back to String() coercion
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const resultUrl: string = typeof (first as any)?.url === 'function' ? (first as any).url().toString() : String(first)
 
     try { await addSpend(COST_PER_IMAGE) } catch { /* non-fatal */ }
     return NextResponse.json({ resultUrl, costUsd: COST_PER_IMAGE })

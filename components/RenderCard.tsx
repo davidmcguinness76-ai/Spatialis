@@ -63,7 +63,7 @@ export default function RenderCard({ photo, surfaces, layers, roomDimensions, fi
           <Badge key={s.id} variant="secondary">{s.label}</Badge>
         ))}
       </div>
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-2 items-center flex-wrap">
         <Button size="sm" onClick={regenerate} disabled={loading}>
           {loading ? 'Generating...' : 'Regenerate'}
         </Button>
@@ -71,6 +71,11 @@ export default function RenderCard({ photo, surfaces, layers, roomDimensions, fi
           <Button size="sm" variant="outline" onClick={() => setShowRender(!showRender)}>
             {showRender ? 'Show Original' : 'Show Render'}
           </Button>
+        )}
+        {latestRender && (
+          <a href={latestRender.resultUrl} download target="_blank" rel="noreferrer">
+            <Button size="sm" variant="outline">Download</Button>
+          </a>
         )}
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
