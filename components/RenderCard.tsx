@@ -44,10 +44,8 @@ export default function RenderCard({ photo, surfaces, layers, roomDimensions, fi
           fixtureNotes,
         }),
       })
-      if (res.status === 402) {
-        setError('Monthly spend limit reached')
-        return
-      }
+      if (res.status === 402) { setError('Monthly spend limit reached'); return }
+      if (!res.ok) { setError('Render failed'); return }
       const { resultUrl, costUsd } = (await res.json()) as { resultUrl: string; costUsd: number }
       onRenderComplete(photo.id, resultUrl, costUsd)
       setShowRender(true)
