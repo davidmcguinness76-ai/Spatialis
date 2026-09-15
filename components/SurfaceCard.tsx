@@ -139,6 +139,7 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
   const showGrout = surface.type === 'wall' || surface.type === 'floor'
   const surfaceW = roomDimensions.length
   const surfaceH = surface.type === 'floor' ? roomDimensions.width : roomDimensions.height
+  const lower: Material = layer.lower ?? DEFAULT_TILE
   const hasSplit = isWall && (layer.splitHeightMm ?? 0) > 0
 
   function setLower(m: Material) { onChange({ ...layer, lower: m }) }
@@ -177,13 +178,13 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
                 <div className="border rounded p-3 space-y-2">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Lower zone (0 to {layer.splitHeightMm}mm)</p>
                   <MaterialEditor
-                    material={layer.lower}
+                    material={lower}
                     showGrout={showGrout}
                     onChange={setLower}
-                    onPhotoUpload={(url) => setLower({ ...(layer.lower.type === 'tile' ? layer.lower : DEFAULT_TILE), photoUrl: url })}
+                    onPhotoUpload={(url) => setLower({ ...(lower.type === 'tile' ? lower : DEFAULT_TILE), photoUrl: url })}
                   />
-                  {layer.lower.type === 'tile' && (
-                    <TileCalculator surfaceWidthMm={surfaceW} surfaceHeightMm={layer.splitHeightMm!} tileDims={layer.lower.dimensions} label={surface.label + ' lower'} />
+                  {lower.type === 'tile' && (
+                    <TileCalculator surfaceWidthMm={surfaceW} surfaceHeightMm={layer.splitHeightMm!} tileDims={lower.dimensions} label={surface.label + ' lower'} />
                   )}
                 </div>
                 <div className="border rounded p-3 space-y-2">
@@ -202,13 +203,13 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
             ) : (
               <>
                 <MaterialEditor
-                  material={layer.lower}
+                  material={lower}
                   showGrout={showGrout}
                   onChange={setLower}
-                  onPhotoUpload={(url) => setLower({ ...(layer.lower.type === 'tile' ? layer.lower : DEFAULT_TILE), photoUrl: url })}
+                  onPhotoUpload={(url) => setLower({ ...(lower.type === 'tile' ? lower : DEFAULT_TILE), photoUrl: url })}
                 />
-                {layer.lower.type === 'tile' && (
-                  <TileCalculator surfaceWidthMm={surfaceW} surfaceHeightMm={surfaceH} tileDims={layer.lower.dimensions} label={surface.label} />
+                {lower.type === 'tile' && (
+                  <TileCalculator surfaceWidthMm={surfaceW} surfaceHeightMm={surfaceH} tileDims={lower.dimensions} label={surface.label} />
                 )}
               </>
             )}
