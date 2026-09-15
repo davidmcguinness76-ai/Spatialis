@@ -17,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={inter.className}>
         <nav className="border-b px-6 py-3 flex gap-6 items-center">
-          <Link href="/"><Image src="/logo.svg" alt="Spatialis" width={120} height={36} priority /></Link>
+          <Link href="/"><Image src="/logo.svg" alt="Spatialis" width={120} height={36} priority style={{ mixBlendMode: 'multiply' }} /></Link>
           <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">Room</Link>
           <Link href="/design" className="text-sm text-muted-foreground hover:text-foreground">Design</Link>
           <Link href="/renders" className="text-sm text-muted-foreground hover:text-foreground">Renders</Link>
