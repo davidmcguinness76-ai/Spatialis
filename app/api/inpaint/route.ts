@@ -19,8 +19,12 @@ type InpaintRequest = {
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as InpaintRequest
 
-  if (await isOverLimit()) {
-    return NextResponse.json({ error: 'Monthly spend limit reached' }, { status: 402 })
+  try {
+    if (await isOverLimit()) {
+      return NextResponse.json({ error: 'Monthly spend limit reached' }, { status: 402 })
+    }
+  } catch (e) {
+    console.error('[inpaint] spend check failed:', e)
   }
 
   const prompt = buildPrompt(body.visibleSurfaces, body.layers, body.roomDimensions, body.fixtureNotes)
