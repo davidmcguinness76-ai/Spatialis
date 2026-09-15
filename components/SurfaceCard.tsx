@@ -176,7 +176,7 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
               <Input
                 type="number"
                 placeholder="e.g. 1200"
-                value={entry.belowMm ?? ''}
+                value={entry.belowMm ?? 0}
                 onChange={(e) => updateSplit('belowMm', e.target.value)}
                 className="w-28"
               />
@@ -186,7 +186,7 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
               <Input
                 type="number"
                 placeholder="e.g. 1200"
-                value={entry.aboveMm ?? ''}
+                value={entry.aboveMm ?? 0}
                 onChange={(e) => updateSplit('aboveMm', e.target.value)}
                 className="w-28"
               />

@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Canvas, FabricImage, FabricText, Circle } from 'fabric'
 import type { Surface } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,103 +12,77 @@ type Props = {
 }
 
 export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const fabricRef = useRef<Canvas | null>(null)
-  const objectMapRef = useRef<Map<string, [Circle, FabricText]>>(new Map())
-  const surfacesRef = useRef(surfaces)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [imgSize, setImgSize] = useState({ w: 600, h: 400 })
   const [newLabel, setNewLabel] = useState('')
   const [newType, setNewType] = useState<Surface['type']>('wall')
-
-  // keep surfacesRef in sync so the move handler closure sees latest
+  const surfacesRef = useRef(surfaces)
   useEffect(() => { surfacesRef.current = surfaces }, [surfaces])
 
-  useEffect(() => {
-    if (!canvasRef.current) return
-    const canvas = new Canvas(canvasRef.current, { width: 600, height: 400, selection: false, perPixelTargetFind: false })
-    fabricRef.current = canvas
-
-    FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' }).then((img) => {
-      const scale = 600 / img.width!
-      const scaledHeight = img.height! * scale
-      img.set({ left: 0, top: 0, originX: 'left', originY: 'top' })
-      img.scale(scale)
-      try { canvas.setDimensions({ width: 600, height: scaledHeight }) } catch { /* fabric init race */ }
-      canvas.backgroundImage = img
-
-      // Restore existing surface dots
-      surfacesRef.current.forEach((s) => {
-        const x = s.x ?? 100
-        const y = s.y ?? 100
-        placeDot(canvas, s.id, s.label, x, y)
-      })
-
-      canvas.renderAll()
-    }).catch((err) => console.error('[FloorPlan] image load failed:', err))
-
-    return () => {
-      canvas.dispose()
-      objectMapRef.current.clear()
-    }
-  }, [imageUrl])
-
-  function placeDot(canvas: Canvas, id: string, label: string, x: number, y: number) {
-    const dot = new Circle({
-      radius: 14, fill: '#3b82f6', left: x, top: y,
-      selectable: true, hasControls: false, hasBorders: false,
-      lockScalingX: true, lockScalingY: true, lockRotation: true,
-    })
-    const txt = new FabricText(label, {
-      left: x + 14, top: y - 6, fontSize: 13, fill: '#1e3a5f', selectable: false,
-    })
-    objectMapRef.current.set(id, [dot, txt])
-    canvas.add(dot, txt)
-
-    dot.on('moving', () => {
-      txt.set({ left: dot.left! + 14, top: dot.top! - 6 })
-      canvas.renderAll()
-      // Save position back
-      const updated = surfacesRef.current.map((s) =>
-        s.id === id ? { ...s, x: dot.left!, y: dot.top! } : s
-      )
-      onChange(updated)
-    })
+  function onImgLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+    const img = e.currentTarget
+    const scale = 600 / img.naturalWidth
+    setImgSize({ w: 600, h: Math.round(img.naturalHeight * scale) })
   }
 
   function addSurface() {
-    if (!newLabel.trim() || !fabricRef.current) return
+    if (!newLabel.trim()) return
     const id = crypto.randomUUID()
-    const canvas = fabricRef.current
-    placeDot(canvas, id, newLabel.trim(), 100, 100)
-    canvas.renderAll()
-    onChange([...surfacesRef.current, { id, label: newLabel.trim(), type: newType, x: 100, y: 100 }])
+    onChange([...surfacesRef.current, { id, label: newLabel.trim(), type: newType, x: 80, y: 80 }])
     setNewLabel('')
   }
 
   function removeSurface(id: string) {
-    const canvas = fabricRef.current
-    if (!canvas) return
-    const pair = objectMapRef.current.get(id)
-    if (pair) {
-      canvas.remove(pair[0], pair[1])
-      objectMapRef.current.delete(id)
-      canvas.renderAll()
-    }
     onChange(surfacesRef.current.filter((s) => s.id !== id))
   }
 
-  function selectDot(id: string) {
-    const canvas = fabricRef.current
-    if (!canvas) return
-    const pair = objectMapRef.current.get(id)
-    if (pair) {
-      canvas.setActiveObject(pair[0])
-      canvas.renderAll()
+  function startDrag(e: React.PointerEvent, id: string) {
+    e.preventDefault()
+    const el = e.currentTarget as HTMLElement
+    el.setPointerCapture(e.pointerId)
+
+    const container = containerRef.current!.getBoundingClientRect()
+    const startX = e.clientX
+    const startY = e.clientY
+    const surface = surfacesRef.current.find((s) => s.id === id)!
+    const origX = surface.x ?? 80
+    const origY = surface.y ?? 80
+
+    function onMove(ev: PointerEvent) {
+      const dx = ev.clientX - startX
+      const dy = ev.clientY - startY
+      const newX = Math.max(0, Math.min(imgSize.w - 14, origX + dx))
+      const newY = Math.max(0, Math.min(imgSize.h - 14, origY + dy))
+      onChange(surfacesRef.current.map((s) => s.id === id ? { ...s, x: newX, y: newY } : s))
     }
+
+    function onUp() {
+      el.removeEventListener('pointermove', onMove)
+      el.removeEventListener('pointerup', onUp)
+    }
+
+    el.addEventListener('pointermove', onMove)
+    el.addEventListener('pointerup', onUp)
   }
 
   return (
     <div className="space-y-3">
-      <canvas ref={canvasRef} className="border rounded" />
+      <div ref={containerRef} className="relative border rounded overflow-hidden" style={{ width: 600, height: imgSize.h }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={imageUrl} alt="floor plan" width={600} onLoad={onImgLoad} className="absolute inset-0" />
+        {surfaces.map((s) => (
+          <div
+            key={s.id}
+            onPointerDown={(e) => startDrag(e, s.id)}
+            className="absolute flex items-center gap-1 cursor-grab active:cursor-grabbing select-none"
+            style={{ left: s.x ?? 80, top: s.y ?? 80, touchAction: 'none' }}
+          >
+            <div className="w-5 h-5 rounded-full bg-blue-500 shrink-0" />
+            <span className="text-xs font-medium text-blue-900 bg-white/80 px-1 rounded">{s.label}</span>
+          </div>
+        ))}
+      </div>
+
       <div className="flex gap-2 items-center">
         <Input
           placeholder="Label (e.g. Wall 1)"
@@ -133,12 +106,11 @@ export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Pro
         </select>
         <Button onClick={addSurface} size="sm">Add Surface</Button>
       </div>
+
       <ul className="text-sm space-y-1">
         {surfaces.map((s) => (
           <li key={s.id} className="flex items-center gap-2">
-            <button onClick={() => selectDot(s.id)} className="text-muted-foreground hover:text-foreground">
-              ● {s.label} ({s.type})
-            </button>
+            <span className="text-muted-foreground">● {s.label} ({s.type})</span>
             <button onClick={() => removeSurface(s.id)} className="text-destructive text-xs underline">remove</button>
           </li>
         ))}
