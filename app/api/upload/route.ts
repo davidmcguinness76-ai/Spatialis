@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 })
 
   try {
-    const blob = await put(file.name, file, { access: 'public', storeId: process.env.SPATIALIS_STORE_ID, allowOverwrite: true })
+    const blob = await put(file.name, file, { access: 'public', allowOverwrite: true, token: process.env.SPATIALIS_READ_WRITE_TOKEN })
     return NextResponse.json({ url: blob.url })
   } catch (err) {
     console.error('[upload] blob put failed:', err)
