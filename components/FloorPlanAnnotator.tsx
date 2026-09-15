@@ -26,7 +26,7 @@ export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Pro
     FabricImage.fromURL(imageUrl).then((img) => {
       const scale = 600 / img.width!
       img.scale(scale)
-      canvas.setHeight(img.height! * scale)
+      canvas.height = img.height! * scale
       canvas.backgroundImage = img
       canvas.renderAll()
     })
