@@ -15,10 +15,13 @@ type Props = {
 export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fabricRef = useRef<Canvas | null>(null)
-  // map surfaceId → [dot, label] fabric objects
   const objectMapRef = useRef<Map<string, [Circle, FabricText]>>(new Map())
+  const surfacesRef = useRef(surfaces)
   const [newLabel, setNewLabel] = useState('')
   const [newType, setNewType] = useState<Surface['type']>('wall')
+
+  // keep surfacesRef in sync so the move handler closure sees latest
+  useEffect(() => { surfacesRef.current = surfaces }, [surfaces])
 
   useEffect(() => {
     if (!canvasRef.current) return
@@ -32,6 +35,14 @@ export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Pro
       img.scale(scale)
       try { canvas.setDimensions({ width: 600, height: scaledHeight }) } catch { /* fabric init race */ }
       canvas.backgroundImage = img
+
+      // Restore existing surface dots
+      surfacesRef.current.forEach((s) => {
+        const x = s.x ?? 100
+        const y = s.y ?? 100
+        placeDot(canvas, s.id, s.label, x, y)
+      })
+
       canvas.renderAll()
     }).catch((err) => console.error('[FloorPlan] image load failed:', err))
 
@@ -41,19 +52,35 @@ export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Pro
     }
   }, [imageUrl])
 
+  function placeDot(canvas: Canvas, id: string, label: string, x: number, y: number) {
+    const dot = new Circle({
+      radius: 10, fill: '#3b82f6', left: x, top: y,
+      selectable: true, hasControls: false, hasBorders: false,
+    })
+    const txt = new FabricText(label, {
+      left: x + 14, top: y - 6, fontSize: 13, fill: '#1e3a5f', selectable: false,
+    })
+    objectMapRef.current.set(id, [dot, txt])
+    canvas.add(dot, txt)
+
+    dot.on('moving', () => {
+      txt.set({ left: dot.left! + 14, top: dot.top! - 6 })
+      canvas.renderAll()
+      // Save position back
+      const updated = surfacesRef.current.map((s) =>
+        s.id === id ? { ...s, x: dot.left!, y: dot.top! } : s
+      )
+      onChange(updated)
+    })
+  }
+
   function addSurface() {
     if (!newLabel.trim() || !fabricRef.current) return
     const id = crypto.randomUUID()
     const canvas = fabricRef.current
-
-    const dot = new Circle({ radius: 10, fill: '#3b82f6', left: 100, top: 100, selectable: true, hasControls: false, hasBorders: false })
-    const label = new FabricText(newLabel.trim(), { left: 115, top: 93, fontSize: 14, fill: '#1e3a5f', selectable: false })
-
-    objectMapRef.current.set(id, [dot, label])
-    canvas.add(dot, label)
+    placeDot(canvas, id, newLabel.trim(), 100, 100)
     canvas.renderAll()
-
-    onChange([...surfaces, { id, label: newLabel.trim(), type: newType }])
+    onChange([...surfacesRef.current, { id, label: newLabel.trim(), type: newType, x: 100, y: 100 }])
     setNewLabel('')
   }
 
@@ -66,7 +93,17 @@ export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Pro
       objectMapRef.current.delete(id)
       canvas.renderAll()
     }
-    onChange(surfaces.filter((s) => s.id !== id))
+    onChange(surfacesRef.current.filter((s) => s.id !== id))
+  }
+
+  function selectDot(id: string) {
+    const canvas = fabricRef.current
+    if (!canvas) return
+    const pair = objectMapRef.current.get(id)
+    if (pair) {
+      canvas.setActiveObject(pair[0])
+      canvas.renderAll()
+    }
   }
 
   return (
@@ -77,6 +114,7 @@ export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Pro
           placeholder="Label (e.g. Wall 1)"
           value={newLabel}
           onChange={(e) => setNewLabel(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && addSurface()}
           className="w-40"
         />
         <select
@@ -94,10 +132,12 @@ export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Pro
         </select>
         <Button onClick={addSurface} size="sm">Add Surface</Button>
       </div>
-      <ul className="text-sm text-muted-foreground space-y-1">
+      <ul className="text-sm space-y-1">
         {surfaces.map((s) => (
           <li key={s.id} className="flex items-center gap-2">
-            <span>{s.label} ({s.type})</span>
+            <button onClick={() => selectDot(s.id)} className="text-muted-foreground hover:text-foreground">
+              ● {s.label} ({s.type})
+            </button>
             <button onClick={() => removeSurface(s.id)} className="text-destructive text-xs underline">remove</button>
           </li>
         ))}

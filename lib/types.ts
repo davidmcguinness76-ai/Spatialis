@@ -16,6 +16,8 @@ export type Surface = {
   id: string
   label: string
   type: 'wall' | 'floor' | 'ceiling' | 'bath' | 'shower' | 'sink' | 'toilet'
+  x?: number
+  y?: number
 }
 
 export type Photo = {
