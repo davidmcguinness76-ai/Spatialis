@@ -12,7 +12,7 @@ function currentMonth(): string {
 
 export async function getSpend(): Promise<SpendRecord> {
   try {
-    const { blobs } = await list({ prefix: 'spatialis/spend' })
+    const { blobs } = await list({ prefix: 'spatialis/spend', storeId: process.env.SPATIALIS_STORE_ID })
     const blob = blobs[0]
     if (!blob) return { month: currentMonth(), totalUsd: 0 }
     const res = await fetch(blob.url)
@@ -28,7 +28,7 @@ export async function addSpend(usd: number): Promise<void> {
   const current = await getSpend()
   const updated: SpendRecord = { month: currentMonth(), totalUsd: current.totalUsd + usd }
   try {
-    await put(BLOB_PATHNAME, JSON.stringify(updated), { access: 'public', addRandomSuffix: false })
+    await put(BLOB_PATHNAME, JSON.stringify(updated), { access: 'public', addRandomSuffix: false, storeId: process.env.SPATIALIS_STORE_ID })
   } catch {
     // Spend tracking failure should not block the render — token may be unset in dev
   }
