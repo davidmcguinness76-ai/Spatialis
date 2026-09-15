@@ -25,7 +25,7 @@ export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Pro
 
   useEffect(() => {
     if (!canvasRef.current) return
-    const canvas = new Canvas(canvasRef.current, { width: 600, height: 400 })
+    const canvas = new Canvas(canvasRef.current, { width: 600, height: 400, selection: false, perPixelTargetFind: false })
     fabricRef.current = canvas
 
     FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' }).then((img) => {
@@ -54,8 +54,9 @@ export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Pro
 
   function placeDot(canvas: Canvas, id: string, label: string, x: number, y: number) {
     const dot = new Circle({
-      radius: 10, fill: '#3b82f6', left: x, top: y,
+      radius: 14, fill: '#3b82f6', left: x, top: y,
       selectable: true, hasControls: false, hasBorders: false,
+      lockScalingX: true, lockScalingY: true, lockRotation: true,
     })
     const txt = new FabricText(label, {
       left: x + 14, top: y - 6, fontSize: 13, fill: '#1e3a5f', selectable: false,
