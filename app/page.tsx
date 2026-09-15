@@ -111,11 +111,19 @@ export default function HomePage() {
             {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
           </div>
         ) : (
+          <div className="space-y-2">
+            <button
+              onClick={() => update({ floorPlan: { imageUrl: '', surfaces: [] } })}
+              className="text-xs text-destructive underline"
+            >
+              Remove floor plan
+            </button>
           <FloorPlanAnnotator
             imageUrl={room.floorPlan.imageUrl}
             surfaces={room.floorPlan.surfaces}
             onChange={(surfaces) => update({ floorPlan: { ...room.floorPlan, surfaces } })}
           />
+          </div>
         )}
       </section>
 
