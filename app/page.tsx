@@ -26,6 +26,8 @@ const DEFAULT_PROJECT = () => ({
 
 export default function HomePage() {
   const [project, setProject] = useState<Project | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   useEffect(() => {
     setProject(getProject() ?? DEFAULT_PROJECT())
@@ -43,11 +45,14 @@ export default function HomePage() {
   async function handleFloorPlanUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setUploading(true)
+    setUploadError(null)
     const fd = new FormData()
     fd.append('file', file)
     const res = await fetch('/api/upload', { method: 'POST', body: fd })
+    setUploading(false)
     if (!res.ok) {
-      console.error('Upload failed:', res.status)
+      setUploadError(`Upload failed (${res.status})`)
       return
     }
     const { url } = await res.json()
@@ -99,9 +104,11 @@ export default function HomePage() {
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Floor Plan</h2>
         {!room.floorPlan.imageUrl ? (
-          <div>
+          <div className="space-y-1">
             <Label htmlFor="floorplan">Upload floor plan image</Label>
-            <Input id="floorplan" type="file" accept="image/*" onChange={handleFloorPlanUpload} className="mt-1" />
+            <Input id="floorplan" type="file" accept="image/*" onChange={handleFloorPlanUpload} className="mt-1" disabled={uploading} />
+            {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
+            {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
           </div>
         ) : (
           <FloorPlanAnnotator

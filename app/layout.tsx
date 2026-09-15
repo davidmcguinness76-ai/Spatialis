@@ -2,6 +2,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
+import Image from 'next/image'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -16,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={inter.className}>
         <nav className="border-b px-6 py-3 flex gap-6 items-center">
-          <span className="font-semibold text-lg">Spatialis</span>
+          <Link href="/"><Image src="/logo.svg" alt="Spatialis" width={120} height={36} priority /></Link>
           <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">Room</Link>
           <Link href="/design" className="text-sm text-muted-foreground hover:text-foreground">Design</Link>
           <Link href="/renders" className="text-sm text-muted-foreground hover:text-foreground">Renders</Link>
