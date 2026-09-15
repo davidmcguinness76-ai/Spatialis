@@ -15,6 +15,8 @@ type Props = {
 export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fabricRef = useRef<Canvas | null>(null)
+  // map surfaceId → [dot, label] fabric objects
+  const objectMapRef = useRef<Map<string, [Circle, FabricText]>>(new Map())
   const [newLabel, setNewLabel] = useState('')
   const [newType, setNewType] = useState<Surface['type']>('wall')
 
@@ -23,17 +25,19 @@ export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Pro
     const canvas = new Canvas(canvasRef.current, { width: 600, height: 400 })
     fabricRef.current = canvas
 
-    FabricImage.fromURL(imageUrl).then((img) => {
+    FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' }).then((img) => {
       const scale = 600 / img.width!
-      img.scale(scale)
       const scaledHeight = img.height! * scale
-      canvas.setDimensions({ width: 600, height: scaledHeight })
+      img.set({ left: 0, top: 0, originX: 'left', originY: 'top' })
+      img.scale(scale)
+      try { canvas.setDimensions({ width: 600, height: scaledHeight }) } catch { /* fabric init race */ }
       canvas.backgroundImage = img
       canvas.renderAll()
-    })
+    }).catch((err) => console.error('[FloorPlan] image load failed:', err))
 
     return () => {
       canvas.dispose()
+      objectMapRef.current.clear()
     }
   }, [imageUrl])
 
@@ -42,15 +46,27 @@ export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Pro
     const id = crypto.randomUUID()
     const canvas = fabricRef.current
 
-    const dot = new Circle({ radius: 10, fill: '#3b82f6', left: 100, top: 100, selectable: true })
-    const text = new FabricText(newLabel, { left: 115, top: 93, fontSize: 14, fill: '#1e3a5f', selectable: false })
+    const dot = new Circle({ radius: 10, fill: '#3b82f6', left: 100, top: 100, selectable: true, hasControls: false, hasBorders: false })
+    const label = new FabricText(newLabel.trim(), { left: 115, top: 93, fontSize: 14, fill: '#1e3a5f', selectable: false })
 
-    canvas.add(dot, text)
+    objectMapRef.current.set(id, [dot, label])
+    canvas.add(dot, label)
     canvas.renderAll()
 
-    const updated = [...surfaces, { id, label: newLabel.trim(), type: newType }]
-    onChange(updated)
+    onChange([...surfaces, { id, label: newLabel.trim(), type: newType }])
     setNewLabel('')
+  }
+
+  function removeSurface(id: string) {
+    const canvas = fabricRef.current
+    if (!canvas) return
+    const pair = objectMapRef.current.get(id)
+    if (pair) {
+      canvas.remove(pair[0], pair[1])
+      objectMapRef.current.delete(id)
+      canvas.renderAll()
+    }
+    onChange(surfaces.filter((s) => s.id !== id))
   }
 
   return (
@@ -80,7 +96,10 @@ export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Pro
       </div>
       <ul className="text-sm text-muted-foreground space-y-1">
         {surfaces.map((s) => (
-          <li key={s.id}>{s.label} ({s.type})</li>
+          <li key={s.id} className="flex items-center gap-2">
+            <span>{s.label} ({s.type})</span>
+            <button onClick={() => removeSurface(s.id)} className="text-destructive text-xs underline">remove</button>
+          </li>
         ))}
       </ul>
     </div>
