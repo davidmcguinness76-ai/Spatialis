@@ -36,7 +36,7 @@ export type Render = {
 }
 
 export type Material =
-  | { type: 'tile'; photoUrl: string; dimensions: { w: number; h: number }; label: string }
+  | { type: 'tile'; photoUrl: string; dimensions: { w: number; h: number }; label: string; groutWidth?: number; groutColour?: string }
   | { type: 'paint'; colour: string; finish: 'matt' | 'silk' | 'gloss'; label: string }
 
 export type SurfaceLayer = {

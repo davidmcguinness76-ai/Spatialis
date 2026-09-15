@@ -134,6 +134,27 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
                 />
               </div>
             </div>
+            <div className="flex gap-2 items-end">
+              <div>
+                <Label>Grout width (mm)</Label>
+                <Input
+                  type="number"
+                  placeholder="3"
+                  value={tileMat?.groutWidth ?? ''}
+                  onChange={(e) => updateTileMaterial({ groutWidth: e.target.value ? Number(e.target.value) : undefined })}
+                  className="w-24"
+                />
+              </div>
+              <div>
+                <Label>Grout colour</Label>
+                <Input
+                  type="color"
+                  value={tileMat?.groutColour ?? '#cccccc'}
+                  onChange={(e) => updateTileMaterial({ groutColour: e.target.value })}
+                  className="w-16 h-10 p-1"
+                />
+              </div>
+            </div>
             <TileCalculator
               surfaceWidthMm={surfaceW}
               surfaceHeightMm={splitH}
