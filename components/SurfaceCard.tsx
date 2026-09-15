@@ -76,6 +76,8 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
     updateTileMaterial({ photoUrl: url })
   }
 
+  const isFixture = ['bath', 'shower', 'sink', 'toilet'].includes(surface.type)
+  const isWall = surface.type === 'wall'
   const isTile = matType === 'tile'
   const surfaceH = surface.type === 'floor' ? roomDimensions.width : roomDimensions.height
   const surfaceW = surface.type === 'floor' ? roomDimensions.length : roomDimensions.length
@@ -93,12 +95,16 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {isFixture ? (
+          <p className="text-sm text-muted-foreground">Fixture — use Fixture notes below to describe changes (e.g. replace with shower).</p>
+        ) : (
         <div className="flex gap-2">
           <Button size="sm" variant={isTile ? 'default' : 'outline'} onClick={() => setMatType('tile')}>Tile</Button>
           <Button size="sm" variant={!isTile ? 'default' : 'outline'} onClick={() => setMatType('paint')}>Paint</Button>
         </div>
+        )}
 
-        {isTile ? (
+        {!isFixture && isTile ? (
           <div className="space-y-2">
             <div>
               <Label>Tile reference photo</Label>
@@ -134,7 +140,7 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
                 />
               </div>
             </div>
-            <div className="flex gap-2 items-end">
+            {isWall && <div className="flex gap-2 items-end">
               <div>
                 <Label>Grout width (mm)</Label>
                 <Input
@@ -154,7 +160,7 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
                   className="w-16 h-10 p-1"
                 />
               </div>
-            </div>
+            </div>}
             <TileCalculator
               surfaceWidthMm={surfaceW}
               surfaceHeightMm={splitH}
@@ -162,7 +168,7 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
               label={surface.label}
             />
           </div>
-        ) : (
+        ) : !isFixture ? (
           <div className="space-y-2">
             <div>
               <Label>Colour</Label>
@@ -188,9 +194,9 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
               </select>
             </div>
           </div>
-        )}
+        ) : null}
 
-        {surface.type === 'wall' && (
+        {isWall && (
           <div className="space-y-1">
             <Label>Split height (mm) <span className="text-xs font-normal text-muted-foreground">— optional, leave 0 for full wall</span></Label>
             <div className="flex gap-2">
