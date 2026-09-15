@@ -140,7 +140,7 @@ export default function SurfaceCard({ surface, layer, roomDimensions, onChange }
                 />
               </div>
             </div>
-            {isWall && <div className="flex gap-2 items-end">
+            {(isWall || surface.type === 'floor') && <div className="flex gap-2 items-end">
               <div>
                 <Label>Grout width (mm)</Label>
                 <Input
