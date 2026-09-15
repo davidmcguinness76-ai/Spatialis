@@ -17,7 +17,18 @@ export function saveProject(p: Project): void {
 export function getDesign(): Design | null {
   if (typeof window === 'undefined') return null
   const raw = localStorage.getItem(DESIGN_KEY)
-  return raw ? (JSON.parse(raw) as Design) : null
+  if (!raw) return null
+  const d = JSON.parse(raw) as Design
+  // migrate old materials[] shape → lower/upper
+  d.layers = d.layers.map((l) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const legacy = l as any
+    if (!l.lower && Array.isArray(legacy.materials) && legacy.materials.length > 0) {
+      return { surfaceId: l.surfaceId, lower: legacy.materials[0].material }
+    }
+    return l
+  })
+  return d
 }
 
 export function saveDesign(d: Design): void {
