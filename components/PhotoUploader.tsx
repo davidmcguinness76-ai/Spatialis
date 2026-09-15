@@ -18,6 +18,7 @@ export default function PhotoUploader({ surfaces, onUpload }: Props) {
     const file = e.target.files?.[0]
     if (!file) return
     onUpload(file, selectedRef.current)
+    selectedRef.current = []
     e.target.value = ''
   }
 
