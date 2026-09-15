@@ -15,7 +15,7 @@ export type Room = {
 export type Surface = {
   id: string
   label: string
-  type: 'wall' | 'floor' | 'ceiling'
+  type: 'wall' | 'floor' | 'ceiling' | 'bath' | 'shower' | 'sink' | 'toilet'
 }
 
 export type Photo = {

@@ -70,6 +70,10 @@ export default function FloorPlanAnnotator({ imageUrl, surfaces, onChange }: Pro
           <option value="wall">Wall</option>
           <option value="floor">Floor</option>
           <option value="ceiling">Ceiling</option>
+          <option value="bath">Bath</option>
+          <option value="shower">Shower</option>
+          <option value="sink">Sink</option>
+          <option value="toilet">Toilet</option>
         </select>
         <Button onClick={addSurface} size="sm">Add Surface</Button>
       </div>
