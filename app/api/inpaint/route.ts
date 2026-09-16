@@ -39,18 +39,18 @@ export async function POST(req: NextRequest) {
     const Replicate = (await import('replicate')).default
     const replicate = new Replicate({ auth: process.env.REPLICATE_API_KEY })
 
-    // ponytail: full-white mask = repaint everything; per-surface mask generation is the upgrade path
-    const maskUrl = body.maskUrl ?? 'https://placehold.co/1x1/ffffff/ffffff.png'
-
+    // img2img: preserve room structure, restyle surfaces. prompt_strength 0.6 = strong restyle, keeps layout.
     const output = await replicate.run(
-      'stability-ai/stable-diffusion-inpainting:95b7223104132402a9ae91cc677285bc5eb997834bd2349fa486f53910fd68b3' as `${string}/${string}:${string}`,
+      'stability-ai/sdxl:7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc' as `${string}/${string}:${string}`,
       {
         input: {
           image: body.photoUrl,
-          mask: maskUrl,
-          prompt,
-          num_inference_steps: 25,
+          prompt: `Photorealistic bathroom interior, ${prompt}`,
+          negative_prompt: 'cartoon, painting, illustration, distorted, ugly, blurry, low quality',
+          num_inference_steps: 30,
           guidance_scale: 7.5,
+          prompt_strength: 0.6,
+          num_outputs: 1,
         },
       }
     )
