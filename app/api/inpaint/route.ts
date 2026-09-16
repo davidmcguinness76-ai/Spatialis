@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
           negative_prompt: 'cartoon, illustration, distorted, ugly, blurry, low quality, unrealistic',
           guidance_scale: 15,
           num_inference_steps: 50,
-          strength: 0.8,
+          strength: 0.4,
         },
       }
     )
