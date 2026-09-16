@@ -27,7 +27,9 @@ export default function RenderCard({ photo, surfaces, layers, roomDimensions, fi
   async function regenerate() {
     setLoading(true)
     setError(null)
+    setShowRender(false)
     try {
+      console.log('[regenerate] using base photo:', photo.imageUrl)
       const res = await fetch('/api/inpaint', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
