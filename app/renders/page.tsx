@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react'
 import { getProject, saveProject, getDesign } from '@/lib/storage'
 import type { Project, Design } from '@/lib/types'
 import RenderCard from '@/components/RenderCard'
-import SpendBadge from '@/components/SpendBadge'
 
 export default function RendersPage() {
   const [project, setProject] = useState<Project | null>(null)
@@ -52,10 +51,7 @@ export default function RendersPage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Renders</h1>
-        <SpendBadge />
-      </div>
+      <h1 className="text-2xl font-bold">Renders</h1>
       {room.photos.length === 0 ? (
         <p className="text-muted-foreground">No photos yet. Upload them on the Room page.</p>
       ) : (
