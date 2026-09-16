@@ -39,18 +39,17 @@ export async function POST(req: NextRequest) {
     const Replicate = (await import('replicate')).default
     const replicate = new Replicate({ auth: process.env.REPLICATE_API_KEY })
 
-    // img2img: preserve room structure, restyle surfaces. prompt_strength 0.6 = strong restyle, keeps layout.
+    // Interior design model: takes a photo + prompt, reskins surfaces while preserving room structure
     const output = await replicate.run(
-      'stability-ai/sdxl:7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc' as `${string}/${string}:${string}`,
+      'adirik/interior-design:76604baddc85b1b4616e1c6475eca080da339c8875bd4996705440484a6eac38' as `${string}/${string}:${string}`,
       {
         input: {
           image: body.photoUrl,
-          prompt: `Photorealistic bathroom interior, ${prompt}`,
-          negative_prompt: 'cartoon, painting, illustration, distorted, ugly, blurry, low quality',
-          num_inference_steps: 30,
-          guidance_scale: 7.5,
-          prompt_strength: 0.6,
-          num_outputs: 1,
+          prompt: `Photorealistic bathroom, ${prompt}`,
+          negative_prompt: 'cartoon, illustration, distorted, ugly, blurry, low quality, unrealistic',
+          guidance_scale: 15,
+          num_inference_steps: 50,
+          strength: 0.8,
         },
       }
     )
